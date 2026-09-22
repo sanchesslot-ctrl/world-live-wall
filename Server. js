@@ -1,0 +1,20 @@
+const express = require('express');
+const cors = require('cors');
+const app = express();
+app.use(cors());
+app.use(express.json());
+const PAYPAL_EMAIL='sanchesslot@gmail.com';
+let totalVisits=0; let visits=[]; let liveUsers={};
+app.use((req,res,next)=>{
+  totalVisits++;
+  const ip = req.headers['x-forwarded-for'] || req.ip;
+  visits.push({time:new Date(), path:req.path, ip});
+  if(visits.length>100) visits.shift();
+  liveUsers[ip]={lastSeen:Date.now(), ip};
+  next();
+});
+setInterval(()=>{const n=Date.now(); for(let k in liveUsers) if(n-liveUsers[k].lastSeen>60000) delete liveUsers[k];},10000);
+app.get('/', (req,res)=> res.send(`<h1>WORLD LIVE WALL IS LIVE</h1><p>PayPal: ${PAYPAL_EMAIL}</p><p>Visits:${totalVisits}</p><p><a href="/admin/stats">STATS</a></p>`));
+app.get('/admin/stats',(req,res)=>res.json({status:"NEW WORLD LIVE CODE WORKING", paypal_email:PAYPAL_EMAIL, total_visits:totalVisits, live_now:Object.keys(liveUsers).length, live_users:Object.values(liveUsers)}));
+const PORT=process.env.PORT||10000;
+app.listen(PORT,()=>console.log('LIVE'));
